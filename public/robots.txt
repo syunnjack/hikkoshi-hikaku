@@ -1,4 +1,4 @@
 User-agent: *
 Disallow:
 
-Sitemap: https://hikkoshi-hikaku.example.com/sitemap.xml
+Sitemap: https://hikkoshi-hikaku.jp/sitemap.xml
