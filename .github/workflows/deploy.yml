@@ -42,8 +42,6 @@ jobs:
       #
       # 消す操作は一切しない。views の更新だけを届ける。
       #
-      # 注意: app/ routes/ config/ は対象外なので、コントローラやルートを
-      # 変えたときは別途デプロイが要る。
       - name: Deploy views to Xserver via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2.4
         with:
@@ -55,3 +53,39 @@ jobs:
           remote_path: '/home/xs501620/hikkoshi-hikaku.jp/app/resources/'
           sftp_only: true
           delete_remote_files: false
+
+      # ビューだけでなくアプリ本体（app/ routes/ database/ config/）も届ける。
+      # .env・vendor・storage はサーバ側のものを使うので送らない（--delete もしない）。
+      - name: Deploy application code via rsync
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: >-
+            -avzr
+            --exclude=".git" --exclude=".github" --exclude="node_modules"
+            --exclude="public" --exclude="vendor" --exclude="storage"
+            --exclude="tests" --exclude=".env" --exclude="bootstrap/cache"
+          path: ./
+          remote_path: /home/xs501620/hikkoshi-hikaku.jp/app/
+          remote_host: ${{ secrets.SSH_HOST }}
+          remote_port: '10022'
+          remote_user: ${{ secrets.SSH_USERNAME }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Run migrations and load company data
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: 10022
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /home/xs501620/hikkoshi-hikaku.jp/app
+            PHP=/usr/bin/php8.3
+            [ -x "$PHP" ] || PHP=/opt/php-8.3.30/bin/php
+            $PHP artisan migrate --force
+            $PHP artisan config:cache
+            $PHP artisan route:cache
+            $PHP artisan view:cache
+            # 引越安心マークの認定事業者。社名をキーにした upsert なので毎回流してよい。
+            $PHP -d memory_limit=512M artisan db:seed --class=MovingCompanySeeder --force

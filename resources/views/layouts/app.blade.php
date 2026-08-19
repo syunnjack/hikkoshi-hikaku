@@ -8,13 +8,19 @@
 
     <title>@yield('title', config('app.name') . ' | 実際の相見積もり額の口コミで引越し業者の相場がわかる')</title>
     <meta name="description" content="@yield('description', '実際に引越しをした人が投稿する相見積もり額の口コミサイトです。業者ごとの相場を確認でき、新しいレポートが投稿されるとLINEで通知を受け取れます。')">
-    <link rel="canonical" href="{{ url()->current() }}">
+    @php
+        // url()->current() はクエリを落とす。内容が変わる条件だけを canonical に残す
+        // （現在は業者ページがパス型URLなので、通常は付かない）。
+        $canonicalQuery = array_filter(request()->only(['company_name']), fn ($value) => $value !== null && $value !== '');
+        $canonicalUrl = url()->current() . ($canonicalQuery ? '?' . http_build_query($canonicalQuery) : '');
+    @endphp
+    <link rel="canonical" href="{{ $canonicalUrl }}">
 
     <meta property="og:site_name" content="{{ config('app.name') }}">
     <meta property="og:type" content="website">
     <meta property="og:title" content="@yield('title', config('app.name') . ' | 実際の相見積もり額の口コミで引越し業者の相場がわかる')">
     <meta property="og:description" content="@yield('description', '実際に引越しをした人が投稿する相見積もり額の口コミサイトです。業者ごとの相場を確認でき、新しいレポートが投稿されるとLINEで通知を受け取れます。')">
-    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:url" content="{{ $canonicalUrl }}">
     <meta property="og:locale" content="ja_JP">
 
     <meta name="twitter:card" content="summary">

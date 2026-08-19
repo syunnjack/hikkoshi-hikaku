@@ -11,6 +11,7 @@ Route::get('/search', [PriceReportController::class, 'search'])->name('reports.s
 Route::post('/reports', [PriceReportController::class, 'store'])
     ->name('reports.store')
     ->middleware('throttle:5,1');
+Route::get('/company/{companyName}', [PriceReportController::class, 'show'])->name('companies.show');
 Route::get('/sitemap.xml', [PriceReportController::class, 'sitemap'])->name('sitemap');
 Route::view('/about', 'about')->name('about');
 

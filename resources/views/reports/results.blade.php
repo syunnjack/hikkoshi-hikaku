@@ -34,6 +34,23 @@
     <div class="alert alert-danger py-2">{{ $errors->first() }}</div>
   @endif
 
+  @if($company)
+    <section class="border rounded p-3 mb-4 bg-light">
+      <h2 class="h6 mb-2">{{ $company->name }}は「引越安心マーク」の認定事業者です</h2>
+      <p class="small mb-2">
+        引越安心マークは、標準引越運送約款を守ること、苦情などに対応する「代表お客様窓口」を置くこと、
+        引越管理者講習の修了者を全事業所に配置することなどを満たした事業者を、全日本トラック協会が認定する制度です。
+      </p>
+      <p class="text-muted small mb-0">
+        出典：<a href="{{ $company->source_url }}" target="_blank" rel="noopener">{{ '全日本トラック協会「引越安心マーク制度 認定事業者一覧」' }}</a>
+        （{{ optional($company->confirmed_on)->format('Y年n月j日') }}時点）／
+        <a href="{{ $company->certificate_url }}" target="_blank" rel="noopener">認定証（PDF）</a>
+      </p>
+    </section>
+  @else
+    <p class="text-muted small">この業者は、全日本トラック協会の「引越安心マーク」認定事業者一覧には掲載されていません（掲載がないことは、サービスの良し悪しを示すものではありません）。</p>
+  @endif
+
   @if($averagePrice)
     <p class="fs-5">平均額: <strong>{{ number_format($averagePrice) }}円</strong>（{{ $reports->count() }}件の口コミより）</p>
   @else
@@ -122,5 +139,17 @@
       <button type="submit" class="btn btn-dark">投稿する</button>
     </form>
   </section>
+
+  @if($relatedCompanies->isNotEmpty())
+    <section class="mt-5 pt-4 border-top">
+      <h2 class="h5">同じ行のほかの認定事業者</h2>
+      <div class="d-flex flex-wrap gap-2 mt-2">
+        @foreach($relatedCompanies as $related)
+          <a href="{{ route('companies.show', ['companyName' => $related->name]) }}" class="btn btn-sm btn-outline-secondary">{{ $related->name }}</a>
+        @endforeach
+      </div>
+      <p class="mt-3"><a href="{{ route('reports.index') }}">認定事業者の一覧に戻る</a></p>
+    </section>
+  @endif
 </div>
 @endsection

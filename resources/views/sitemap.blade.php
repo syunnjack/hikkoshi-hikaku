@@ -8,9 +8,9 @@
     <loc>{{ url('/about') }}</loc>
     <priority>0.3</priority>
   </url>
-@foreach ($companies as $company)
+@foreach ($companyNames as $companyName)
   <url>
-    <loc>{{ url('/search?company_name=' . urlencode($company->company_name)) }}</loc>
+    <loc>{{ route('companies.show', ['companyName' => $companyName]) }}</loc>
     <priority>0.7</priority>
   </url>
 @endforeach

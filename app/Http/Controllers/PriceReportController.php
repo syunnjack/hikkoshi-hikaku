@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MovingCompany;
 use App\Models\PriceReport;
 use App\Models\Watch;
 use App\Support\ContentModeration;
@@ -18,24 +19,59 @@ class PriceReportController extends Controller
             ->take(12)
             ->get();
 
-        return view('reports.index', compact('recentCompanies'));
+        $companies = MovingCompany::orderBy('name')->get();
+        $companiesByColumn = $companies
+            ->groupBy('kana_column')
+            ->sortBy(fn ($group, string $column) => array_search($column, MovingCompany::COLUMN_ORDER, true));
+
+        return view('reports.index', compact('recentCompanies', 'companies', 'companiesByColumn'));
     }
 
+    /** 検索フォームからの遷移。業者ページの正しいURLへ送る。 */
     public function search(Request $request)
     {
-        $companyName = trim($request->input('company_name', ''));
+        $companyName = trim((string) $request->input('company_name', ''));
+
         if ($companyName === '') {
             return redirect()->route('reports.index');
         }
 
+        return redirect()->route('companies.show', ['companyName' => $companyName], 301);
+    }
+
+    public function show(string $companyName)
+    {
+        $companyName = trim($companyName);
+
+        if ($companyName === '') {
+            return redirect()->route('reports.index');
+        }
+
+        $company = MovingCompany::where('name', $companyName)->first();
         $reports = PriceReport::where('company_name', $companyName)->latest()->get();
+
+        // 認定事業者でもなく、口コミも無い業者名は、中身の無いページになるため出さない。
+        if ($company === null && $reports->isEmpty()) {
+            abort(404);
+        }
+
         $averagePrice = $reports->count() > 0 ? (int) round($reports->avg('total_price')) : null;
 
         $isWatching = session('line_user_local_id')
             ? Watch::where('line_user_id', session('line_user_local_id'))->where('company_name', $companyName)->exists()
             : false;
 
-        return view('reports.results', compact('companyName', 'reports', 'averagePrice', 'isWatching'));
+        $relatedCompanies = $company
+            ? MovingCompany::where('kana_column', $company->kana_column)
+                ->where('id', '!=', $company->id)
+                ->orderBy('name')
+                ->take(12)
+                ->get()
+            : collect();
+
+        return view('reports.results', compact(
+            'companyName', 'company', 'reports', 'averagePrice', 'isWatching', 'relatedCompanies'
+        ));
     }
 
     public function store(Request $request)
@@ -78,8 +114,14 @@ class PriceReportController extends Controller
 
     public function sitemap()
     {
-        $companies = PriceReport::select('company_name')->distinct()->get();
-        $xml = view('sitemap', compact('companies'))->render();
+        // 認定事業者と、口コミが投稿された業者の両方を載せる。
+        $names = MovingCompany::pluck('name')
+            ->merge(PriceReport::select('company_name')->distinct()->pluck('company_name'))
+            ->unique()
+            ->sort()
+            ->values();
+
+        $xml = view('sitemap', ['companyNames' => $names])->render();
 
         return response($xml, 200)->header('Content-Type', 'application/xml');
     }

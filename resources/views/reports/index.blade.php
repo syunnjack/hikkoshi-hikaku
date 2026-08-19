@@ -45,7 +45,7 @@
     <div class="row row-cols-2 row-cols-md-4 g-2 mt-1 mb-4">
       @foreach($recentCompanies as $company)
         <div class="col">
-          <a href="{{ route('reports.search', ['company_name' => $company->company_name]) }}" class="btn btn-outline-primary w-100">
+          <a href="{{ route('companies.show', ['companyName' => $company->company_name]) }}" class="btn btn-outline-primary w-100">
             {{ $company->company_name }}（{{ $company->reports_count }}件）
           </a>
         </div>
@@ -53,9 +53,31 @@
     </div>
   @endif
 
+  @if($companies->isNotEmpty())
+    <section class="mt-4">
+      <h2 class="h5">引越安心マークの認定事業者から探す（{{ number_format($companies->count()) }}社）</h2>
+      <p class="text-muted small">
+        全日本トラック協会が「引越安心マーク」を認定している引越業者の一覧です。
+        業者名を選ぶと、その業者の相見積もり額の口コミと、認定の内容を確認できます。
+      </p>
+      @foreach($companiesByColumn as $column => $group)
+        <h3 class="h6 mt-3">{{ $column }}（{{ $group->count() }}社）</h3>
+        <div class="d-flex flex-wrap gap-2">
+          @foreach($group as $company)
+            <a href="{{ route('companies.show', ['companyName' => $company->name]) }}" class="btn btn-sm btn-outline-secondary">{{ $company->name }}</a>
+          @endforeach
+        </div>
+      @endforeach
+      <p class="text-muted small mt-3">
+        出典：<a href="{{ $companies->first()->source_url }}" target="_blank" rel="noopener">全日本トラック協会「引越安心マーク制度 認定事業者一覧」</a>
+        （{{ optional($companies->first()->confirmed_on)->format('Y年n月j日') }}時点）
+      </p>
+    </section>
+  @endif
+
   <section class="mt-5 pt-4 border-top">
     <h2 class="h5">相見積もり額を投稿する</h2>
-    <p class="text-muted small">引越しをした経験がある方は、下記の検索から業者ページに移動して「相見積もり額を投稿する」から投稿できます。</p>
+    <p class="text-muted small">引越しをした経験がある方は、業者ページの「相見積もり額を投稿する」から投稿できます。金額は実際に契約した額を入れてください。</p>
   </section>
 </div>
 @endsection
